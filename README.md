@@ -14,7 +14,7 @@ Personal AI skills for data and product work.
 
 ## Agent Installation Instructions
 
-> These instructions are for the AI agent. If you are asked to install the `mw-bq` skill, run the appropriate commands below for the environment you are in.
+> These instructions are for the AI agent. If you are asked to install the `mw-bq` skill, run the appropriate commands for your environment.
 
 ### Claude Code
 
@@ -24,34 +24,39 @@ cd ~/.claude/skills
 git clone https://github.com/brazyduckling/work-skills.git work-skills
 ```
 
-The skill is now available as `mw-bq` in Claude Code.
+The skill is available as `mw-bq` across all projects.
 
 ### Copilot CLI
 
 ```bash
-mkdir -p ~/.copilot/installed-plugins
-cd ~/.copilot/installed-plugins
+mkdir -p ~/.copilot/skills
+cd ~/.copilot/skills
 git clone https://github.com/brazyduckling/work-skills.git work-skills
 ```
 
-The skill is now available as `mw-bq` in Copilot CLI.
+The skill is available as `mw-bq` across all sessions.
 
 ### OpenCode
 
 ```bash
-cd <project-root>/.opencode/commands
+mkdir -p ~/.config/opencode/skills
+cd ~/.config/opencode/skills
+git clone https://github.com/brazyduckling/work-skills.git work-skills
 ```
 
-Create a file called `mw-bq.md` with this content:
+The skill is available as `mw-bq` across all projects. OpenCode also searches `~/.claude/skills/`, so the Claude Code install works too.
 
-```markdown
----
-description: "BigQuery data exploration, querying, and optimization with mandatory confirmation gates. Use when working with BigQuery data, writing BQ SQL queries, exploring dataset schemas, profiling tables, sampling data, generating reports, switching GCP projects, estimating query costs, or optimizing query performance."
----
-Read and follow the skill at `~/.claude/skills/work-skills/mw-bq/SKILL.md`.
+### Claude Code (Cowork)
+
+Cowork uses the same skill paths as Claude Code:
+
+```bash
+mkdir -p ~/.claude/skills
+cd ~/.claude/skills
+git clone https://github.com/brazyduckling/work-skills.git work-skills
 ```
 
-> **Note:** OpenCode commands are project-scoped (not global). You must also have the skill cloned locally — use the Claude Code install above to clone into `~/.claude/skills/`.
+The skill is available as `mw-bq` across all projects.
 
 ---
 
