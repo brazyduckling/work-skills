@@ -7,7 +7,7 @@ description: BigQuery data exploration, querying, and optimization with mandator
 
 ## Important
 
-- **NEVER run a query without user confirmation.** Always show the query, estimate cost via `--dry_run`, present the estimate, and wait for explicit approval before executing.
+- **NEVER run a query ≥ $1 without user confirmation.** Always show the query, estimate cost via `--dry_run`, and present the estimate. Queries under $1 (< 200 GB scanned) may auto-approve — log the estimate and execute. Queries ≥ $1 require explicit approval before executing.
 - **NEVER assume column values from names alone.** When exploring unfamiliar data, always sample actual values first (`bq head` or `LIMIT 10`) before writing filters or aggregations.
 - **ALWAYS run the Schema-First Protocol before writing any query.** No exceptions — even if you think you know the table. Check schema, survey values, then decide. See the Schema-First Protocol section below.
 - **Always use Standard SQL** (`--nouse_legacy_sql`).
@@ -27,7 +27,7 @@ Write the SQL and show it to the user.
 bq query --dry_run --nouse_legacy_sql 'YOUR QUERY'
 ```
 
-### Step 3: Present estimate and ask
+### Step 3: Check cost and decide
 
 Report the bytes scanned and approximate cost using this table:
 
@@ -39,11 +39,15 @@ Report the bytes scanned and approximate cost using this table:
 | 1 TB          | $5.00            |
 | 10 TB         | $50.00           |
 
-Format the confirmation request as:
+**If estimated cost < $1 (< 200 GB scanned):** Auto-approve. Log the estimate in your response and execute immediately — no need to wait for user confirmation.
+
+> **Auto-approved — query will scan ~X GB (~$Y).** Running...
+
+**If estimated cost ≥ $1 (≥ 200 GB scanned):** Ask for explicit confirmation before executing.
 
 > **Query will scan ~X GB (~$Y).** Run it?
 
-### Step 4: Wait for confirmation
+### Step 4: Wait for confirmation (only for queries ≥ $1)
 
 Do NOT proceed until the user explicitly confirms. If the user says "go", "yes", "run it", "do it" — then execute. Otherwise, revise or abandon.
 
