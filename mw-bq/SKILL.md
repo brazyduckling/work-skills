@@ -1,5 +1,5 @@
 ---
-name: bq
+name: mw-bq
 description: BigQuery data exploration, querying, and optimization with mandatory confirmation gates. Use when working with BigQuery data, writing BQ SQL queries, exploring dataset schemas, profiling tables, sampling data (top 10s, head), generating reports, switching GCP projects, estimating query costs, or optimizing query performance. Triggers on tasks involving BigQuery, BQ, data analysis, SQL queries against BQ datasets, schema exploration, table profiling, cost estimation, or query optimization. Do NOT use for Athena queries (use jet-aws-athena or jet-odl-athena instead).
 ---
 
