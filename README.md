@@ -12,6 +12,28 @@ Personal AI skills for data and product work.
 
 ---
 
+## Installation (Claude Code)
+
+1. **Clone this repository** into your Claude Code skills directory:
+   ```bash
+   cd ~/.claude/skills
+   git clone https://github.com/brazyduckling/work-skills.git
+   ```
+
+2. **Or link the skill directly** if you prefer:
+   ```bash
+   ln -s /path/to/work-skills/mw-bq ~/.claude/skills/mw-bq
+   ```
+
+3. **Verify installation** by invoking the skill in Claude Code:
+   ```
+   /mw-bq
+   ```
+
+The skill will be automatically discovered and available for use in Claude Code.
+
+---
+
 ## mw-bq vs jet-bq — What's Different?
 
 `mw-bq` is based on JET's internal `jet-bq` skill (`ai-platform/skills`). The core content is the same — same query writing guidelines, same optimization rules, same CLI patterns, same reference files. What differs is the workflow enforcement.
