@@ -36,6 +36,23 @@ git clone https://github.com/brazyduckling/work-skills.git work-skills
 
 The skill is now available as `mw-bq` in Copilot CLI.
 
+### OpenCode
+
+```bash
+cd <project-root>/.opencode/commands
+```
+
+Create a file called `mw-bq.md` with this content:
+
+```markdown
+---
+description: "BigQuery data exploration, querying, and optimization with mandatory confirmation gates. Use when working with BigQuery data, writing BQ SQL queries, exploring dataset schemas, profiling tables, sampling data, generating reports, switching GCP projects, estimating query costs, or optimizing query performance."
+---
+Read and follow the skill at `~/.claude/skills/work-skills/mw-bq/SKILL.md`.
+```
+
+> **Note:** OpenCode commands are project-scoped (not global). You must also have the skill cloned locally — use the Claude Code install above to clone into `~/.claude/skills/`.
+
 ---
 
 ## mw-bq vs jet-bq — What's Different?
