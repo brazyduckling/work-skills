@@ -12,25 +12,29 @@ Personal AI skills for data and product work.
 
 ---
 
-## Installation (Claude Code)
+## Agent Installation Instructions
 
-1. **Clone this repository** into your Claude Code skills directory:
-   ```bash
-   cd ~/.claude/skills
-   git clone https://github.com/brazyduckling/work-skills.git
-   ```
+> These instructions are for the AI agent. If you are asked to install the `mw-bq` skill, run the appropriate commands below for the environment you are in.
 
-2. **Or link the skill directly** if you prefer:
-   ```bash
-   ln -s /path/to/work-skills/mw-bq ~/.claude/skills/mw-bq
-   ```
+### Claude Code
 
-3. **Verify installation** by invoking the skill in Claude Code:
-   ```
-   /mw-bq
-   ```
+```bash
+mkdir -p ~/.claude/skills
+cd ~/.claude/skills
+git clone https://github.com/brazyduckling/work-skills.git work-skills
+```
 
-The skill will be automatically discovered and available for use in Claude Code.
+The skill is now available as `mw-bq` in Claude Code.
+
+### Copilot CLI
+
+```bash
+mkdir -p ~/.copilot/installed-plugins
+cd ~/.copilot/installed-plugins
+git clone https://github.com/brazyduckling/work-skills.git work-skills
+```
+
+The skill is now available as `mw-bq` in Copilot CLI.
 
 ---
 
