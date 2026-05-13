@@ -8,15 +8,15 @@ Personal AI skills for data and product work.
 
 | Skill | Description |
 |-------|-------------|
-| [bq](./bq/SKILL.md) | BigQuery data exploration, querying, and optimization with mandatory confirmation gates |
+| [mw-bq](./mw-bq/SKILL.md) | BigQuery data exploration, querying, and optimization with mandatory confirmation gates |
 
 ---
 
-## bq vs jet-bq — What's Different?
+## mw-bq vs jet-bq — What's Different?
 
-`bq` is based on JET's internal `jet-bq` skill (`ai-platform/skills`). The core content is the same — same query writing guidelines, same optimization rules, same CLI patterns, same reference files. What differs is the workflow enforcement.
+`mw-bq` is based on JET's internal `jet-bq` skill (`ai-platform/skills`). The core content is the same — same query writing guidelines, same optimization rules, same CLI patterns, same reference files. What differs is the workflow enforcement.
 
-### What `bq` adds
+### What `mw-bq` adds
 
 #### Confirmation Protocol
 
@@ -27,7 +27,7 @@ Every query execution requires explicit user approval — no exceptions:
 3. Present: **"Query will scan ~X GB (~$Y). Run it?"**
 4. Wait for explicit confirmation before executing
 
-`jet-bq` mentions dry-run as a best practice. `bq` makes it a hard gate.
+`jet-bq` mentions dry-run as a best practice. `mw-bq` makes it a hard gate.
 
 Free operations (metadata, `bq head`, `bq ls`, `--dry_run`) skip the gate.
 
@@ -59,7 +59,7 @@ Explicitly states: *"Do NOT use for Athena queries — use jet-aws-athena or jet
 
 ### What `jet-bq` has that `bq` doesn't
 
-| | `jet-bq` | `bq` |
+| | `jet-bq` | `mw-bq` |
 |---|---|---|
 | Windows install | ✅ `winget install Google.CloudSDK` | ❌ macOS/Linux only |
 | `future-ideas.md` reference file | ✅ | ❌ |
@@ -68,4 +68,4 @@ Explicitly states: *"Do NOT use for Athena queries — use jet-aws-athena or jet
 
 ### TL;DR
 
-`bq` = `jet-bq` + three safety layers: you must always look at the data before writing a query, and the AI must always ask before running anything that costs money.
+`mw-bq` = `jet-bq` + three safety layers: you must always look at the data before writing a query, and the AI must always ask before running anything that costs money.
