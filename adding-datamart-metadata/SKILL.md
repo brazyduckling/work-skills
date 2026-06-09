@@ -15,6 +15,8 @@ Prepare FTDNA datamart metadata updates by checking glossary reuse, proposing ne
 
 This skill is meant to work on a different machine, not just this repo checkout.
 
+**Installation:** See `references/installation.md` for Copilot and Claude Code install steps.
+
 **Required capabilities:**
 - Ability to read repo files
 - Ability to search repo files
@@ -27,7 +29,6 @@ This skill is meant to work on a different machine, not just this repo checkout.
 
 **Approved external skill dependency:**
 - If the environment supports installable skills, use `jet-bq` for BigQuery exploration.
-- Do **not** rely on a user-specific personal skill such as a private `bq` skill.
 - If `jet-bq` is not installed, tell the user to download it from the JET-approved skills source before treating it as a skill dependency.
 
 **No hidden dependency on other skills.** This skill should still work even if no other custom skills are installed.

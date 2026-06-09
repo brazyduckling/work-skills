@@ -18,7 +18,6 @@ If a tool is missing, do not pretend the result is complete. State the limitatio
 
 If the environment supports skills:
 - prefer `jet-bq` for BigQuery inspection
-- do not rely on a user-specific personal `bq` skill
 - if `jet-bq` cannot be found, tell the user to download `jet-bq` from the JET-approved skills source
 
 ## 1. Get the latest shared glossary
