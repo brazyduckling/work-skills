@@ -1,6 +1,6 @@
 ---
 name: adding-datamart-metadata
-description: Prepares BigQuery metadata updates for FTDNA datamarts by checking the shared glossary, recommending reuse or new descriptions, and wiring schema and config steps. Use when the user says "add column descriptions", "add table metadata", "inject column descriptions", or asks to document a new or existing FTDNA datamart.
+description: Use when documenting a new or existing FTDNA datamart with column descriptions, table metadata, glossary reuse decisions, or schema/config metadata wiring. Triggers include "add column descriptions", "add table metadata", "inject column descriptions", and similar FTDNA datamart metadata requests.
 metadata:
   author: Michal Witkowski
   version: 1.0.0
@@ -10,6 +10,35 @@ metadata:
 # Adding Datamart Metadata
 
 Prepare FTDNA datamart metadata updates by checking glossary reuse, proposing new descriptions, and mapping the schema/config work needed for the table.
+
+## Tooling and Dependencies
+
+This skill is meant to work on a different machine, not just this repo checkout.
+
+**Required capabilities:**
+- Ability to read repo files
+- Ability to search repo files
+- Git access to the target repo
+
+**Optional but strongly recommended:**
+- `bq` CLI for live schema and live value checks
+- `gcloud` for BigQuery auth and project context
+- `gh` CLI only if the user wants an example PR fetched from GitHub instead of supplying files directly
+
+**Approved external skill dependency:**
+- If the environment supports installable skills, use `jet-bq` for BigQuery exploration.
+- Do **not** rely on a user-specific personal skill such as a private `bq` skill.
+- If `jet-bq` is not installed, tell the user to download it from the JET-approved skills source before treating it as a skill dependency.
+
+**No hidden dependency on other skills.** This skill should still work even if no other custom skills are installed.
+
+**Default inspection tools:**
+1. file read/search tools available in the environment
+2. `git fetch` + `git show` for baseline files from the repo default branch
+3. `jet-bq` if installed, otherwise `bq show` + `bq head` for live BigQuery schema and free sampling
+4. `gh pr view` only when the user explicitly wants an example PR and GitHub CLI is available
+
+If one of these tools is unavailable, fall back to the next available option and tell the user what evidence source is being used.
 
 ## Important
 
@@ -28,6 +57,12 @@ Ask the user for:
 2. Whether this is a new datamart, an existing datamart, or unknown
 3. The code repo or folder that contains the SQL and config
 4. Any example PR, process doc, or deck they want followed
+5. The BigQuery table identifier if a live table already exists
+
+If the repo layout is not the standard FTDNA layout, ask for:
+- glossary file path
+- table folder path
+- config file path
 
 If the user does not know whether the datamart is new or existing, determine it from the repo structure and config.
 
@@ -39,6 +74,8 @@ Read the current source of truth in this order:
 3. Any existing DDL file for the table
 4. The table config file
 5. Any example PR or process note the user supplied
+
+Use `references/retrieval-playbook.md` for the exact repo and BigQuery commands to retrieve each of these safely.
 
 Build a column inventory with these buckets:
 - **Reuse candidate**: glossary key already exists and likely matches
@@ -74,6 +111,8 @@ Use this decision tree:
    - prepare a new DDL task entry in config
 
 Treat "DDL already wired" as true only if the config already contains a separate `*_ddl` task with schema-step flags such as `is_dml` and `is_common_template`.
+
+If the config or repo layout cannot be checked directly, do not guess. Ask the user for the missing file path or repo location.
 
 ### Step 4: Draft the metadata
 
@@ -113,6 +152,12 @@ Prepare, but do not apply, the exact changes for:
    - whether config changes are required
    - the exact task block to add if required
    - dependencies on the main table task
+
+Always state which evidence source was used for each proposal:
+- default branch repo file
+- local working tree file
+- live BigQuery schema
+- user-supplied example PR or document
 
 ### Step 6: Ask for approval
 
@@ -209,3 +254,12 @@ Solution: Check the config directly. If no `*_ddl` task exists, prepare one.
 Cause: The workflow reached proposal-ready state, but this skill is scoped to stop after showing the changes.
 
 Solution: Summarize the exact edits and wait for an explicit follow-up request to implement them.
+
+### Required tool is missing
+
+Cause: The environment does not have a needed tool such as `git`, `bq`, `gcloud`, or `gh`.
+
+Solution:
+1. Say exactly which tool is missing
+2. Fall back if possible
+3. If there is no safe fallback, ask the user to provide the needed file or schema evidence manually
