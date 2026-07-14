@@ -1,17 +1,24 @@
 ---
 name: adding-datamart-metadata
-description: Use when documenting a new or existing FTDNA datamart with column descriptions, table metadata, nested Struct or Record fields, enum/value explanations, or DDL/config metadata wiring. Triggers include metadata review feedback, misleading field names, nested field schemas, unclear allowed values, and similar FTDNA datamart metadata requests.
+description: Prepare shared-glossary-first metadata proposals for new or existing FTDNA datamarts. Use when the user asks to "add metadata descriptions", "add column descriptions", "document this table", "populate ftdna_macros", "review glossary reuse", or "wire DDL metadata" for a table, including nested Struct or Record fields, enum/value explanations, and DDL/config metadata wiring.
 metadata:
   author: Michal Witkowski
-  version: 1.3.0
+  version: 1.8.0
   category: workflow-automation
+  canonical_source: https://raw.githubusercontent.com/brazyduckling/work-skills/main/adding-datamart-metadata/
 ---
 
 # Adding Datamart Metadata
 
-Prepare FTDNA datamart metadata updates by checking glossary reuse, proposing new descriptions, and mapping the schema/config work needed for the table.
+Prepare FTDNA datamart metadata updates by checking shared-glossary reuse, proposing new descriptions, and mapping the schema/config work needed for the table.
 
 This skill is for evidence-backed, analyst-friendly metadata. Prefer business meaning over SQL narration, and surface naming problems when description text alone would still leave the field misleading.
+
+The default output is a **shared glossary recommendation** that multiple DDL files can reuse safely. Do not drift into table-local definitions unless the meaning truly depends on the table or nested path.
+
+In the standard FTDNA layout, `ftdna_macros.jinja` is the shared glossary baseline. The skill must inspect it first and treat it as authoritative unless the user explicitly points to a different shared glossary file.
+
+For maintainers changing this skill, use `evals/protocol.md` and `evals/cases.jsonl` to check that the decision logic still protects the shared glossary.
 
 ## Tooling and Dependencies
 
@@ -47,10 +54,15 @@ If one of these tools is unavailable, fall back to the next available option and
 ## Important
 
 - Always inspect the latest shared glossary before proposing any new descriptions.
+- Treat the shared glossary as the canonical metadata layer. DDL files should populate table metadata from that shared glossary unless a path-specific or inline exception is genuinely required.
+- Never treat "this table folder only has SQL + config" as evidence that there is no shared glossary. In the standard FTDNA layout, the shared glossary still lives in `ftdna_macros.jinja`.
+- Never let an existing local DDL pattern or nearby table convention override the glossary-first policy.
 - Default to the local cloned repo on the user's laptop when the user gives only a repo name.
 - If a local clone is found, confirm the chosen local path with the user before using it.
 - Ask the user to refresh the selected local repo against `origin/master`, or confirm that it is already up to date, before checking glossary, config, SQL, or DDL baseline files unless the user explicitly asks for a different base branch.
 - Recommend reuse only when the existing glossary entry matches the column's meaning closely enough; do not reuse based on name similarity alone.
+- Aim for glossary entries that are accurate enough to cover multiple tables that truly share the same field meaning. Do not make a definition more generic just to force reuse. If an existing shared definition is too specific to one table, revise it so it stays precise for all proven tables in scope.
+- If the same column name is used for materially different data across tables, do not paper over the mismatch with caveats. Recommend a different name or modeling change, and base that recommendation on repo evidence, live schema or values, and any corroborating docs or review context.
 - Preserve exact column order from the current SQL or BigQuery schema when preparing a DDL file.
 - Keep the final decision with the user: ask for approval before any write step.
 - Stop after showing the proposed changes. Do not edit target repo files unless the user explicitly asks for a follow-up implementation step.
@@ -64,8 +76,41 @@ If one of these tools is unavailable, fall back to the next available option and
 - For nested schemas, describe parent groups and child fields differently: parent descriptions explain the grouped domain and grain; child descriptions explain the individual field meaning, but do not force boilerplate on obvious child fields that are already clear from the parent context.
 - When nested field meaning depends on parent context, prefer a full dotted path such as `customer_payments.gross_customer_amounts.gmv_eur` over a leaf-only identifier like `gmv_eur`.
 - If the repo's current macro or DDL pattern cannot express nested descriptions safely, treat that as a metadata-support gap and prepare the minimum macro or template changes needed.
+- Every final description should use a **minimal two-part format** inside one string so both audiences can scan it quickly:
+  - **For stakeholders (`Functional usage:`):** what the column means, how it should be interpreted, and any value semantics the business reader needs. Include enumerated values here for enum/coded/flag/bounded fields.
+  - **For agents and analysts (`Agent / analyst notes:`):** metadata-specific guidance. Three elements are required when applicable: `Source:` (always — use the specific BigQuery table path or SQL reference, e.g. `production_external_adyen.authorisation_events`; read from the transform `*.sql`, never the `*_ddl.sql` self-select; for in-datamart derivations write `Source: derived in-datamart`); `Formula:` (calculated metrics only — the actual derivation); grain, join keys, null behavior, and other caveats that affect correct use.
+- Keep both parts concise. This is not a long two-section essay; it is a compact, skimmable structure.
+- Example values are required for enum/coded/flag/bounded fields; use a format sample for high-cardinality fields. Never enumerate IDs, PII-adjacent fields (e.g. `customer_id`), or GEOGRAPHY columns.
+- A `--` code comment in the DDL is acceptable only as a supplement for a formula too long to fit cleanly in a description. It is never a replacement for the description.
+- For tables with `require_partition_filter = TRUE` (e.g. gold datamarts), state the required filter field in the table description — an unfiltered query will fail at runtime. Also document grain, join keys, and currency conventions (`_eur` vs `_local_currency`) to help agents form correct queries.
+- Before proposing any DDL-only or inline-DDL path, the skill must first show how each field was evaluated against the shared glossary.
 
 ## Instructions
+
+### Step 0: Check for skill updates
+
+Before proceeding with any user task, check if a newer version of this skill is available:
+
+1. Read the local version from this skill's frontmatter (`version: X.Y.Z`) and the `canonical_source` URL.
+2. If `canonical_source` is set and `curl` is available, fetch the remote version header:
+   ```bash
+   curl -s <canonical_source>SKILL.md | grep "^  version:"
+   ```
+3. Compare versions:
+   - If remote version is higher: tell the user before doing anything else — _"There is a newer version of this skill (vX.Y.Z) available. I can update it now — this will replace the files in `~/.copilot/skills/adding-datamart-metadata/` (or `~/.claude/skills/` for Claude Code). Reply **update skill** to proceed or **skip** to continue with the current version."_
+   - If update is approved: download each file from `canonical_source` and overwrite the local copies, then confirm. After updating, restart the user's original request with the new version.
+   - If update is skipped, the check fails, or `canonical_source` is not set: proceed silently with the current version and note it at the start of the response (e.g. `Running skill v1.8.0`).
+
+**Files to update when self-updating:**
+- `SKILL.md`
+- `references/description-quality-rules.md`
+- `references/reuse-rules.md`
+- `references/retrieval-playbook.md`
+- `references/nested-field-rules.md`
+- `references/installation.md`
+- `evals/protocol.md`
+- `evals/rubric.md`
+- `evals/cases.jsonl`
 
 ### Step 1: Gather the target
 
@@ -110,6 +155,8 @@ Then read the current source of truth in this order:
 
 Use `references/retrieval-playbook.md` for the exact repo and BigQuery commands to retrieve each of these safely.
 
+If the standard FTDNA shared glossary file exists, not reading it is a blocking error. Do not continue to a DDL-first recommendation until the shared glossary has been inspected.
+
 If the schema contains nested `STRUCT` / `RECORD` / `REPEATED` fields:
 - build the inventory using full dotted paths
 - capture parent group names, child field names, types, modes, and order
@@ -118,9 +165,14 @@ If the schema contains nested `STRUCT` / `RECORD` / `REPEATED` fields:
 
 Build a column or field inventory with these buckets:
 - **Reuse candidate**: glossary key already exists and likely matches
+- **Revise existing glossary definition**: the glossary key is the right concept, but the current shared wording is too weak, too generic, or incomplete
 - **New description needed**: no suitable glossary entry exists
 - **Do not reuse**: similar-looking key exists, but meaning differs
 - **Rename or modeling issue recommended**: the current field name is itself misleading, or the cleanest description still needs caveats to avoid misleading readers
+
+For any field meant for the shared glossary, also ask:
+- Can one accurate shared definition cover every proven use of this field across the relevant tables?
+- If not, is the right fix a different field name, a path-specific key, or a table-local inline exception?
 
 When comparing columns, check:
 - business meaning
@@ -175,12 +227,36 @@ If nested fields exist:
 
 ### Step 4: Draft the metadata
 
+Use this quick funnel first to decide the resolution path for each field:
+
+- **Glossary term with the same meaning at this grain?** → Reuse (path 1)
+- **Same concept but wording is weak or too specific?** → Revise (path 2)
+- **Genuinely new universal concept?** → Add to glossary (path 3)
+- **Same name, different meaning or grain?** → Path-specific key (path 4). Rename only for true top-level overloads with evidence (paths 5–6). Nested pillars (`customer.reductions.amount` vs `partner.costs.amount`) are intentional namespacing — path-specific key, not rename.
+- **Table-local only?** → Inline DDL (path 7, last resort)
+
+Then confirm using the full resolution paths below.
+
+For each field, explicitly evaluate these resolution paths:
+1. **Reuse the existing shared glossary definition**
+2. **Revise the existing shared glossary definition**
+3. **Add a new shared glossary key**
+4. **Use a path-specific glossary key**
+5. **Recommend a clearer column name**
+6. **Recommend a modeling split or structural fix**
+7. **Keep the description inline in the DDL only as an exceptional fallback**
+
+Choose the cleanest honest path based on evidence. Do not default to reuse just because the name matches. Treat inline DDL descriptions as the last path, not a normal outcome.
+
+Every field must receive one explicit glossary disposition before you propose the DDL plan.
+
 For each column:
 1. Check whether an exact glossary key already exists
 2. If yes, recommend reuse only if the meaning really matches
-3. If not, draft a new description in the shared glossary style
-4. If the match is ambiguous, put it in the **user decision required** bucket
-5. If the current name is misleading and the best wording still feels defensive, put it in the **rename or modeling issue recommended** bucket
+3. If yes but the wording is too generic, inaccurate, or too specific to one table, put it in **revise existing glossary definition**
+4. If not, draft a new description in the shared glossary style
+5. If the match is ambiguous, put it in the **user decision required** bucket
+6. If the current name is misleading and the best wording still feels defensive, put it in the **rename or modeling issue recommended** bucket
 
 See `references/reuse-rules.md` when reuse is ambiguous. See `references/description-quality-rules.md` when wording is generic, null states are tricky, or the current field name may be the real problem. See `references/nested-field-rules.md` when the schema contains `STRUCT`, `RECORD`, or `REPEATED` fields.
 
@@ -190,16 +266,25 @@ For nested fields:
 - decide which child fields need descriptions because they are ambiguous, coded, overloaded, or easy to misuse
 - decide whether the description belongs in the shared glossary, a path-specific glossary key, or inline DDL schema objects
 
-Every proposed new description should cover:
-- what the field means
-- the grain
-- units, currency, or timezone if relevant
-- allowed values if relevant
-- null or edge-case behavior
-- sensitivity if relevant
-- an example value when one is safely observed from live sampling or an unambiguous source example
-- ticket or glossary reference when useful
-- why the current name is misleading, when a rename is recommended
+Every proposed new description should:
+- use the minimal two-part format:
+  - `For stakeholders: ...`
+  - `For agents and analysts: ...`
+- keep the first part focused on what the field means and how it should be interpreted
+- keep the second part focused on grain, join keys, derivation caveats, source precedence, null behavior, allowed values, and other metadata details that affect correct usage
+- include units, currency, timezone, or sensitivity notes only when they matter
+- include an example value only when one is safely observed from live sampling or an unambiguous source example
+- include rename reasoning only in the recommendation notes, not by turning the description into an apology for the field name
+
+When drafting the two-part format:
+- do not let the `For agents and analysts` part become generic filler
+- if there are no confirmed join keys or derivation caveats, say only the confirmed metadata detail that matters
+- if the functional meaning is still too broad to be honest across tables, do not weaken it just to preserve a shared key
+
+Only use inline DDL descriptions when:
+- the meaning is genuinely table-local
+- or the meaning depends on a nested/table path that the shared glossary cannot express cleanly
+- and reuse, revise, add, path-specific, and rename/modeling options were all considered first
 
 For enum-like fields, flags, or codes:
 - include only corroborated values
@@ -225,10 +310,14 @@ If no safe example value is available:
 Prepare, but do not apply, the exact changes for:
 
 1. **Shared glossary**
+   - confirm that this is the reusable cross-table glossary layer, not a table-local dictionary
+   - show the glossary disposition for every field before moving to the DDL plan
    - keys to reuse
+   - keys whose current shared definition should be revised because it is weak, inaccurate, or too specific to one table
    - keys to add
    - keys that should not be reused and why
    - fields where a rename or modeling fix is recommended and why
+   - where a path-specific shared key is safer than a flat shared key
 
 2. **DDL file**
    - file path
@@ -240,6 +329,7 @@ Prepare, but do not apply, the exact changes for:
    - short agent-facing guidance in the table description based only on confirmed evidence
    - whether the file is new or updated
    - any parent-group descriptions, child-field descriptions, or repeated-element notes that must live inline
+   - which descriptions are inline only as a last-resort exception and why
 
 3. **Config**
    - whether config changes are required
@@ -266,25 +356,33 @@ When a table description references sources or architecture:
 
 ### Step 6: Ask for approval
 
-Show the user:
-1. Reuse recommendations
-2. New descriptions
-3. Rename or modeling recommendations
-4. DDL plan
-5. Config plan
-6. Any open questions or ambiguous columns
-7. **Recommended next steps**
+Present every proposed change as a **numbered recommendation list**. Each item must use this exact format:
 
-Ask the user to approve or adjust the proposal.
+```
+[N] ACTION — `field_name` (or `glossary_key` / `parent.child` for nested)
+    Why: one sentence explaining the evidence behind this change.
+    Proposed: "<the exact new description string>"
+    Status: <see status levels below>
+```
 
-If the user approves:
-- summarize the exact files and changes that should be made
-- separate description-only updates from any rename recommendations that are not yet approved for implementation
-- stop here unless the user explicitly asks to implement them
+**Status levels — always written in full, never represented by emoji alone:**
 
-If the user requests changes:
-- revise only the affected parts
-- re-present the updated proposal
+- 🟢 **Status: NEW TABLE / NEW FIELD** — This description is being added to a column or table that does not yet exist in production BigQuery. There are no existing consumers of this column or this glossary key. It is safe to merge once the wording is approved. No downstream check is required.
+
+- 🟡 **Status: EXISTING TABLE — DESCRIPTION ONLY** — This change updates metadata text only. The column name, type, and schema structure are unchanged. Risk is low: the only impact is what analysts and AI agents see when they read the BigQuery schema or call `bq show`. Before merging, verify the new wording is still accurate for every DDL file and table that shares this glossary key — a shared glossary string is used by multiple tables, so a revision to it affects all of them.
+
+- 🔴 **Status: EXISTING PRODUCTION TABLE — STRUCTURAL CHANGE** — This change modifies a column name, DDL schema structure, or a shared glossary key that is currently live in BigQuery and may have active consumers. Risk is HIGH. Any SQL query, Looker explore, downstream DDL task, BI dashboard, or data pipeline that references this column by name will break silently or throw an error if the change is applied without coordination. Before approving this item you must: (1) run `grep -r "<column_name>" <repo_path>/fintech_data_analytics_datamarts/` to find all references in the repo; (2) search for dependent BigQuery views using `bq show --format=prettyjson <project>:<dataset>.<table>`; (3) check all config.json files for downstream tasks that depend on this table; (4) confirm with the owners of any downstream tables or dashboards that they can absorb the change. I will not implement this item until you explicitly confirm in this conversation that the downstream check is complete.
+
+After listing all recommendations, close with:
+
+> _Reply with the numbers you approve (e.g. "approve 1 3 4"), numbers you want adjusted, or "approve all". For any item marked EXISTING PRODUCTION TABLE — STRUCTURAL CHANGE I will not implement until you confirm the downstream check is done._
+
+**Additional rules:**
+
+- Never mix the recommendation list with implementation. Show the list and stop.
+- If a column requires a rename: always include a separate 🟡 description-only recommendation for the current name as a safe fallback — the user may want the description now and the rename later.
+- If open questions remain, add them as `[?] UNCLEAR — field_name` items at the end of the list.
+- For every rename or non-reuse recommendation, quote the specific evidence (SQL line, PR comment, live value) that supports it.
 
 ### Step 7: Guide validation
 
@@ -337,7 +435,31 @@ Actions:
 
 Result: Similar-looking names do not create misleading metadata.
 
-### Example 4: Review feedback says the wording sounds generic
+### Example 3b: Same name, different data across tables
+
+User says: "These three tables all have `status`, but reviewers say the glossary reuse feels wrong."
+
+Actions:
+1. Compare each `status` field using SQL, live values, docs, and existing reviewer context
+2. Check whether one honest shared definition can cover all three
+3. If not, recommend more specific names or path-specific glossary keys
+4. Explain the evidence for the split instead of weakening the wording into something generic
+
+Result: The skill protects the shared glossary from becoming vague or misleading.
+
+### Example 4: Existing glossary concept is right, but the shared definition is weak or too specific to one table
+
+User says: "The field should stay shared, but the current glossary wording is too generic."
+
+Actions:
+1. Confirm that the same field really means the same thing across the target tables
+2. Keep the shared key
+3. Rewrite the existing glossary definition so it is more precise, less generic, and not overfit to one table
+4. Show which DDLs would benefit from the revised shared wording
+
+Result: The skill improves the shared glossary itself instead of creating duplicate or table-local definitions.
+
+### Example 5: Review feedback says the wording sounds generic
 
 User says: "These descriptions sound generic. The reviewer wants the real business meaning and clearer value explanations."
 
@@ -349,7 +471,7 @@ Actions:
 
 Result: Review feedback is translated into precise metadata instead of vague AI-generated wording.
 
-### Example 5: Nested struct fields in a gold datamart
+### Example 6: Nested struct fields in a gold datamart
 
 User says: "This datamart has nested STRUCT fields. Use this PR as the pattern and help me add metadata."
 
@@ -361,6 +483,18 @@ Actions:
 
 Result: The user gets a nested-field metadata proposal that preserves structure and avoids boilerplate.
 
+### Example 7: Truly table-local modeling artifact
+
+User says: "This field only exists because this table branches source precedence in a one-off way. Should it live in the shared glossary?"
+
+Actions:
+1. Check whether the concept exists elsewhere or is only a product of this table's modeling
+2. Confirm that reuse, glossary revision, new glossary key, path-specific key, and rename options would all reduce clarity
+3. Keep the description inline in the DDL only if it is genuinely the last clean option
+4. Explain why the field should remain an exception rather than a shared glossary concept
+
+Result: The shared glossary stays clean, and inline DDL remains a controlled exception.
+
 ## Troubleshooting
 
 ### The glossary has a similar name but not the same meaning
@@ -368,6 +502,25 @@ Result: The user gets a nested-field metadata proposal that preserves structure 
 Cause: Name similarity is being mistaken for semantic equivalence.
 
 Solution: Put the column in the **do not reuse** or **user decision required** bucket and explain the mismatch.
+
+### The skill says there is no glossary file
+
+Cause: It looked only at the current table folder, or it over-weighted nearby DDL convention instead of checking the shared glossary baseline.
+
+Solution:
+1. Re-open the shared glossary baseline first
+2. In the standard FTDNA layout, treat `ftdna_macros.jinja` as mandatory evidence
+3. Re-run the field-by-field glossary decision before allowing any inline-DDL outcome
+
+### The same field name exists across tables, but the data is different
+
+Cause: A shared glossary key is being stretched beyond one real business meaning.
+
+Solution:
+1. Compare the field across the relevant tables using schema, live values, and business docs
+2. Decide whether a path-specific shared key is enough
+3. If not, recommend a clearer field name or modeling split
+4. Keep the shared glossary precise instead of broadening the definition until it becomes generic
 
 ### The table has no DDL file
 

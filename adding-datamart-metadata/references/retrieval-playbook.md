@@ -31,6 +31,32 @@ Use them for business meaning and reader-context evidence.
 
 Do not let these override schema or raw value evidence on their own. Use them to explain the field, not to guess the data shape.
 
+## 0b. Compare cross-table usage when the goal is shared glossary reuse
+
+If the task is about a shared glossary key, do not inspect only one table in isolation.
+
+- Search for the same field name, or the same dotted path, across the relevant datamart SQL and DDL files.
+- Compare business meaning, grain, units, allowed values, and null behavior across those occurrences.
+- If the same name carries different data, keep the glossary precise and prepare a rename, split, or path-specific-key recommendation.
+- If the current shared glossary wording is too specific to one older table, revise it when newer cross-table evidence supports a better shared definition.
+
+Use repo evidence first. Use live values to confirm whether the apparent naming collision is real.
+
+## 0c. Shared glossary baseline is mandatory
+
+In the standard FTDNA layout, the shared glossary is:
+
+```text
+fintech_data_analytics_datamarts/ftdna_macros.jinja
+```
+
+Rules:
+
+- Read this file before drafting any metadata proposal.
+- Read it even if the current table folder contains only SQL and config files.
+- Do not conclude "there is no glossary file for this family" just because the table folder has no glossary file.
+- A nearby inline-DDL pattern is not a reason to skip the shared glossary baseline.
+
 ## Prerequisites
 
 Required:
@@ -61,6 +87,12 @@ First, ask the user to refresh the local repo against `origin/master`, or confir
 
 Then use this `origin/master` file as the default shared-glossary baseline unless the team explicitly says to use a different base branch.
 
+If you have not inspected `ftdna_macros.jinja`, you are not ready to:
+
+- claim there is no shared glossary
+- recommend inline DDL as the primary path
+- or say that reuse is impossible
+
 Read the local working-tree glossary separately only when you need branch-under-change evidence. Do not treat the local working tree as the shared baseline.
 
 If the repo does not use the standard FTDNA glossary path, ask the user for the glossary file path. Do not assume a different path.
@@ -76,6 +108,8 @@ fintech_data_analytics_datamarts/<table-folder>/<table-name>.sql
 ```
 
 Use the SQL output columns as the schema source of truth when there is no live BigQuery table yet.
+
+**This is also where you determine source/lineage.** The transform SQL joins the actual upstream tables. The `*_ddl.sql` file is a self-select (`FROM the_table_itself`) — it does not show lineage. Complex transforms may join 10–15 upstreams via COALESCE/CASE/union branches. Document the primary upstream for each column, not an exhaustive list. If a column comes from a `COALESCE` of multiple sources, name the precedence order.
 
 If the repo layout differs, ask the user for the exact SQL file path.
 
@@ -190,6 +224,14 @@ Use this order for business wording and reviewer context:
 3. Local working-tree wording only as a draft under review, not as the source of truth
 
 For glossary reuse, use the refreshed `origin/master` glossary baseline, not just the current local working tree.
+
+For shared-glossary proposals, also label whether the evidence came from:
+
+- one table only
+- multiple tables with consistent meaning
+- multiple tables with conflicting meaning
+
+If the output starts from "this table family has no glossary file" while `ftdna_macros.jinja` exists, treat that as a retrieval failure and restart the analysis.
 
 Always label evidence as one of:
 
